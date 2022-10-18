@@ -6,58 +6,30 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract NFTToken721 is ERC721URIStorage {
+contract NFTToken721 is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
 
     Counters.Counter private tokenIds;
-    address private deX;
-    address private owner;
-
-    event DeXUpdated(address indexed oldAddress, address indexed newAddress);
 
     constructor() ERC721 ("NFTToken721", "NT721") {
     }
 
-    function mintNewNFT(string memory tokenURI) external returns(uint256) {
-
-        require(callerIsOwner(msg.sender), "Caller isn't DeX");
+    function mint(address owner) external onlyOwner returns(uint256) {
 
         tokenIds.increment();
         uint256 newNFTID = tokenIds.current();
-        _mint(msg.sender, newNFTID);
-        _setTokenURI(newNFTID, tokenURI);
-        setApprovalForAll(deX, true);
+        _mint(owner, newNFTID);
+        _setTokenURI(newNFTID, "NFT");
+        _setApprovalForAll(owner, msg.sender, true);
 
         return newNFTID;
     }
 
-    function burnNFT(address _owner, uint256 tokenId) external returns(bool) {
-        address nftOwner = ownerOf(tokenId);
-
-        require(_owner == nftOwner, "!nftOwner");
-        require(callerIsOwner(msg.sender), "Caller isn't Owner");
+    function burn(uint256 tokenId) external onlyOwner returns(bool) {
         _burn(tokenId);
 
         return true;
     }
-
-    function setNewDeXAddress(address oldAddress, address newAddress) external {
-        require(deX == oldAddress, "Not DeX");
-        require(callerIsOwner(msg.sender), "Caller isn't Owner");
-        require(deX != newAddress, "New Address Can't Be Old Address");
-        require(newAddress != address(0), "Zero Address");
-
-        deX = newAddress;
-        owner = newAddress;
-        emit DeXUpdated(oldAddress, newAddress);
-
-    }
-
-    function callerIsOwner(address addr) private view returns(bool) {
-        if(addr == owner)
-            return true;
-
-        return false;
-        }
 }
