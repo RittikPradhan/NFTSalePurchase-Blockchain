@@ -3,13 +3,15 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-contract TokenA is ERC20 {
+contract PurchaseToken20 is ERC20 {
     address private deX;
+    address private owner;
 
     event DeXUpdated(address indexed oldAddress, address indexed newAddress);
 
-    constructor() ERC20 ("tokenA", "tA20") {
+    constructor() ERC20 ("PurchaseToken20", "PT20") {
         _mint(msg.sender, 10 * 10 ** 18);
+        owner = msg.sender;
     }
 
     function mintNew(address addr, uint256 amount) external {
@@ -17,22 +19,22 @@ contract TokenA is ERC20 {
         _mint(addr, amount);
     }
 
-        function setNewDeXAddress(address oldAddress, address newAddress) external {
+    function setNewDeXAddress(address oldAddress, address newAddress) external {
         require(deX == oldAddress, "Not DeX");
-        require(callerIsDeX(msg.sender), "Caller isn't DeX");
+        require(callerIsOwner(msg.sender), "Caller isn't Owner");
         require(deX != newAddress, "New Address Can't Be Old Address");
         require(newAddress != address(0), "Zero Address");
 
         deX = newAddress;
-
+        owner = newAddress;
         emit DeXUpdated(oldAddress, newAddress);
 
     }
     
-    function callerIsDeX(address addr) private view returns(bool) {
-    if(addr == deX)
-        return true;
+    function callerIsOwner(address addr) private view returns(bool) {
+        if(addr == owner)
+            return true;
 
-    return false;
-    }
+        return false;
+        }
 }

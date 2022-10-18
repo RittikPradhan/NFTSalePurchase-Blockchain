@@ -7,15 +7,16 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TokenB is ERC721URIStorage {
+contract NFTToken721 is ERC721URIStorage {
     using Counters for Counters.Counter;
 
     Counters.Counter private tokenIds;
     address private deX;
+    address private owner;
 
     event DeXUpdated(address indexed oldAddress, address indexed newAddress);
 
-    constructor() ERC721 ("tokenB", "tB721") {
+    constructor() ERC721 ("NFTToken721", "NT721") {
     }
 
     function mintNewNFT(string memory tokenURI) public returns(uint256) {
@@ -33,12 +34,12 @@ contract TokenB is ERC721URIStorage {
 
     function setNewDeXAddress(address oldAddress, address newAddress) external {
         require(deX == oldAddress, "Not DeX");
-        require(callerIsDeX(msg.sender), "Caller isn't DeX");
+        require(callerIsOwner(msg.sender), "Caller isn't Owner");
         require(deX != newAddress, "New Address Can't Be Old Address");
         require(newAddress != address(0), "Zero Address");
 
         deX = newAddress;
-
+        owner = newAddress;
         emit DeXUpdated(oldAddress, newAddress);
 
     }

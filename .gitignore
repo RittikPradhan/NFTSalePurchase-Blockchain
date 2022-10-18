@@ -1,4 +1,5 @@
 node_modules
+.deps
 .env
 coverage
 coverage.json

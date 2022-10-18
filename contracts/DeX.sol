@@ -13,19 +13,19 @@ contract Dex is Ownable, ReentrancyGuard {
 
     event TokenMinted(address indexed, uint256, uint256);
     event SetNFTAddress(address indexed, address indexed);
+    event BuyNFT(address indexed owner, uint256 tokenId);
+    event SellNFT(address indexed oldOwner, address indexed newOwner, uint256 tokenId);
+
 
     constructor(address tA20Address, address tB721Address) {
         tA = TokenA(tA20Address);
         tB = TokenB(tB721Address);
-        _setDexAddress();
     }
 
     function exchangeEthToTokenA() external payable {
         uint256 tokenAmount;
 
-        require(msg.value > 1 ether, "Insufficient Eth");
-        require(msg.sender.code.length != 0, "!EOA");
-        require(msg.sender != address(0), "Zero Address");
+        require(msg.sender.code.length == 0, "!EOA");
 
         tokenAmount = (msg.value * 1000000)/(10 ** 18);
         tA.mintNew(msg.sender, tokenAmount);
@@ -35,20 +35,13 @@ contract Dex is Ownable, ReentrancyGuard {
 
     
     function buyNFT() external {
-
     }
 
     function sellNFT() external {
-
     }
 
     function updateDeXAddress(address newDexAddress) external onlyOwner{
         tA.setNewDeXAddress(address(this), newDexAddress);
         tB.setNewDeXAddress(address(this), newDexAddress);
-    }
-
-    function _setDexAddress() private {
-        tA.setNewDeXAddress(address(0), address(this));
-        tB.setNewDeXAddress(address(0), address(this));
     }
 }
