@@ -16,14 +16,13 @@ contract Dex is Ownable, ReentrancyGuard {
     uint256 constant PRICE = 1000000;
 
     event TokenMinted(address indexed, uint256, uint256);
-    event SetNFTAddress(address indexed, address indexed);
     event BuyNFT(address indexed owner, uint256 tokenId);
-    event SellNFT(address indexed oldOwner, address indexed newOwner, uint256 tokenId);
+    event SellNFT(address indexed owner, uint256 tokenId);
 
 
     constructor(address PT20Address, address NFT721Address, address _feeCollector) {
-        PT20 = TokenA(PT20Address);
-        NFT721 = TokenB(NFT721Address);
+        PT20 = PurchaseToken20(PT20Address);
+        NFT721 = NFTToken721(NFT721Address);
         feeCollector = _feeCollector;
     }
 
@@ -33,19 +32,19 @@ contract Dex is Ownable, ReentrancyGuard {
         require(msg.sender.code.length == 0, "!EOA");
 
         tokenAmount = (msg.value * PRICE)/(10 ** 18);
-        PT20.mintNew(tokenAmount);
+        PT20.mintNew(msg.sender, tokenAmount);
 
         emit TokenMinted(msg.sender, msg.value, tokenAmount);
     }
 
     
     function buyNFT() external {
-        require(PT20.balanceOf(msg.sender) > PRICE, "Insufficient token to buy NFT")
+        require(PT20.balanceOf(msg.sender) > PRICE, "Insufficient token to buy NFT");
         PT20.approve(address(this), PRICE);
         PT20.transferFrom(msg.sender, address(this), PRICE);
 
-        uint256 nftId = tB.mint("https://buy.example/api/item/{newNFTID}.json");
-        NFT721.transfer(msg.sender, nftId);
+        uint256 nftId = NFT721.mintNewNFT("https://buy.example/api/item/{newNFTID}.json");
+        NFT721.transferFrom(address(this), msg.sender, nftId);
 
         emit BuyNFT(msg.sender, nftId);
     }
@@ -63,7 +62,7 @@ contract Dex is Ownable, ReentrancyGuard {
     }
 
     function updateDeXAddress(address newDexAddress) external onlyOwner{
-        tA.setNewDeXAddress(address(this), newDexAddress);
-        tB.setNewDeXAddress(address(this), newDexAddress);
+        PT20.setNewDeXAddress(address(this), newDexAddress);
+        NFT721.setNewDeXAddress(address(this), newDexAddress);
     }
 }

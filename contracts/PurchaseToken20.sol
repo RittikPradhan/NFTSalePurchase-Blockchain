@@ -15,7 +15,7 @@ contract PurchaseToken20 is ERC20 {
     }
 
     function mintNew(address addr, uint256 amount) external {
-        require(callerIsDeX(msg.sender),  "Caller isn't DeX");
+        require(callerIsOwner(msg.sender),  "Caller isn't DeX");
         _mint(addr, amount);
     }
 
