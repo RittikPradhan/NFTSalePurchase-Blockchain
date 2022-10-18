@@ -2,14 +2,18 @@
 
 pragma solidity 0.8.17;
 
-import "./TokenA.sol";
-import "./TokenB.sol";
+import "./PurchaseToken20.sol";
+import "./NFTToken721.sol";
 import "./Ownable.sol";
 import "./ReentrancyGuard.sol";
 
 contract Dex is Ownable, ReentrancyGuard {
-    TokenA tA;
-    TokenB tB;
+    PurchaseToken20 PT20;
+    NFTToken721 NFT721;
+
+    address private feeCollector;
+
+    uint256 constant PRICE = 1000000;
 
     event TokenMinted(address indexed, uint256, uint256);
     event SetNFTAddress(address indexed, address indexed);
@@ -17,27 +21,45 @@ contract Dex is Ownable, ReentrancyGuard {
     event SellNFT(address indexed oldOwner, address indexed newOwner, uint256 tokenId);
 
 
-    constructor(address tA20Address, address tB721Address) {
-        tA = TokenA(tA20Address);
-        tB = TokenB(tB721Address);
+    constructor(address PT20Address, address NFT721Address, address _feeCollector) {
+        PT20 = TokenA(PT20Address);
+        NFT721 = TokenB(NFT721Address);
+        feeCollector = _feeCollector;
     }
 
-    function exchangeEthToTokenA() external payable {
+    function exchangeEthToPurchaseToken() external payable {
         uint256 tokenAmount;
 
         require(msg.sender.code.length == 0, "!EOA");
 
-        tokenAmount = (msg.value * 1000000)/(10 ** 18);
-        tA.mintNew(msg.sender, tokenAmount);
+        tokenAmount = (msg.value * PRICE)/(10 ** 18);
+        PT20.mintNew(tokenAmount);
 
         emit TokenMinted(msg.sender, msg.value, tokenAmount);
     }
 
     
     function buyNFT() external {
+        require(PT20.balanceOf(msg.sender) > PRICE, "Insufficient token to buy NFT")
+        PT20.approve(address(this), PRICE);
+        PT20.transferFrom(msg.sender, address(this), PRICE);
+
+        uint256 nftId = tB.mint("https://buy.example/api/item/{newNFTID}.json");
+        NFT721.transfer(msg.sender, nftId);
+
+        emit BuyNFT(msg.sender, nftId);
     }
 
-    function sellNFT() external {
+    function sellNFT(uint256 nftId) external {
+        bool success = NFT721.burnNFT(msg.sender, nftId);
+        require(success, "Failed to sell");
+
+        uint256 receivableAmount = PRICE - (PRICE * 17)/1000 ;
+        uint256 fee = (PRICE * 17)/1000;
+        PT20.transferFrom(address(this), msg.sender, receivableAmount);
+        PT20.transferFrom(address(this), feeCollector, fee);
+
+        emit SellNFT(msg.sender, nftId);
     }
 
     function updateDeXAddress(address newDexAddress) external onlyOwner{

@@ -19,7 +19,7 @@ contract NFTToken721 is ERC721URIStorage {
     constructor() ERC721 ("NFTToken721", "NT721") {
     }
 
-    function mintNewNFT(string memory tokenURI) public returns(uint256) {
+    function mintNewNFT(string memory tokenURI) external returns(uint256) {
 
         require(callerIsDeX(msg.sender), "Caller isn't DeX");
 
@@ -30,6 +30,16 @@ contract NFTToken721 is ERC721URIStorage {
         setApprovalForAll(deX, true);
 
         return newNFTID;
+    }
+
+    function burnNFT(address owner, uint256 tokenId) external returns(bool) {
+        address nftOwner = ownweOf(tokenId);
+
+        require(owner == nftOwner, "!nftOwner");
+        require(callerIsOwner(msg.sender), "Caller isn't Owner");
+        _burn(tokenId);
+
+        return true;
     }
 
     function setNewDeXAddress(address oldAddress, address newAddress) external {
@@ -44,10 +54,10 @@ contract NFTToken721 is ERC721URIStorage {
 
     }
 
-    function callerIsDeX(address addr) private view returns(bool) {
-    if(addr == deX)
-        return true;
+    function callerIsOwner(address addr) private view returns(bool) {
+        if(addr == owner)
+            return true;
 
-    return false;
-    }
+        return false;
+        }
 }
