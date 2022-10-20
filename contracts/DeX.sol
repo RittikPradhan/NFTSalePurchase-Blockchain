@@ -13,7 +13,8 @@ contract Dex {
 
     uint256 constant PRICE = 1000000;
 
-    event TokenMinted(address indexed, uint256, uint256);
+    event TokenMinted(address indexed owner, uint256 ethAmount, uint256 tokenAmount);
+    event TokenBurned(address indexed owner, uint256 ethAmount, uint256 tokenAmount);
     event BuyNFT(address indexed owner, uint256 tokenId);
     event SellNFT(address indexed owner, uint256 tokenId);
 
@@ -23,7 +24,6 @@ contract Dex {
         feeCollector = _feeCollector;
     }
 
-    
     function exchangeEthToPurchaseToken() external payable {
         uint256 tokenAmount;
 
@@ -35,7 +35,7 @@ contract Dex {
         emit TokenMinted(msg.sender, msg.value, tokenAmount);
     }
 
-    function buyNFT() external payable {
+    function buyNFT() external {
 
         require(PT20.balanceOf(msg.sender) > PRICE, "Insufficient token to buy NFT");
         PT20.transferFrom(msg.sender, address(this), PRICE);
@@ -55,5 +55,17 @@ contract Dex {
         PT20.transfer(feeCollector, fee);
 
         emit SellNFT(msg.sender, nftId);
+    }
+
+    function exchangePurchaseTokenToEth(uint256 amount) external {
+        require(msg.sender.code.length == 0, "!EOA");
+        require(PT20.balanceOf(msg.sender) >= amount, "Insufficient Token Balance");
+
+        uint256 ethAmount = (amount * 10 ** 18)/PRICE ;
+        (bool success, ) = msg.sender.call{value: ethAmount}("");
+        require(success, "Eth not transferred");
+        PT20.burn(msg.sender, amount);
+        
+        emit TokenBurned(msg.sender, ethAmount, amount);
     }
 }
