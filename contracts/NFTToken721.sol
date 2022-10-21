@@ -14,18 +14,20 @@ contract NFTToken721 is ERC721URIStorage, Ownable {
     constructor() ERC721 ("NFTToken721", "NT721") {
     }
 
+    //Only DeX contract can call mint function.
     function mint(address owner) external onlyOwner returns(uint256) {
 
         tokenIds.increment();
         uint256 newNFTID = tokenIds.current();
         _mint(owner, newNFTID);
         _setTokenURI(newNFTID, "NFT");
-        _setApprovalForAll(owner, msg.sender, true);
 
         return newNFTID;
     }
 
-    function burn(uint256 tokenId) external onlyOwner {
+    //Only DeX contract can call burn function.
+    function burn(address userAddress, uint256 tokenId) external onlyOwner {
+        require(ownerOf(tokenId) == userAddress, "!nftOwner");
         _burn(tokenId);
     }
 }

@@ -13,10 +13,10 @@ contract Dex {
 
     uint256 constant PRICE = 1000000;
 
-    event TokenMinted(address indexed owner, uint256 ethAmount, uint256 tokenAmount);
-    event TokenBurned(address indexed owner, uint256 ethAmount, uint256 tokenAmount);
     event BuyNFT(address indexed owner, uint256 tokenId);
     event SellNFT(address indexed owner, uint256 tokenId);
+    event TokenMinted(address indexed owner, uint256 ethAmount, uint256 tokenAmount);
+    event TokenBurned(address indexed owner, uint256 ethAmount, uint256 tokenAmount);
 
     constructor(address PT20Address, address NFT721Address, address _feeCollector) {
         PT20 = PurchaseToken20(PT20Address);
@@ -27,9 +27,7 @@ contract Dex {
     function exchangeEthToPurchaseToken() external payable {
         uint256 tokenAmount;
 
-        require(msg.sender.code.length == 0, "!EOA");
-
-        tokenAmount = (msg.value * PRICE)/(10 ** 18);
+        tokenAmount = (msg.value * PRICE);
         PT20.mint(msg.sender, tokenAmount);
 
         emit TokenMinted(msg.sender, msg.value, tokenAmount);
@@ -37,7 +35,7 @@ contract Dex {
 
     function buyNFT() external {
 
-        require(PT20.balanceOf(msg.sender) > PRICE, "Insufficient token to buy NFT");
+        require(PT20.balanceOf(msg.sender) >= PRICE, "Insufficient token to buy NFT");
         PT20.transferFrom(msg.sender, address(this), PRICE);
 
         uint256 nftId = NFT721.mint(msg.sender);
@@ -46,7 +44,7 @@ contract Dex {
     }
 
     function sellNFT(uint256 nftId) external {
-        NFT721.burn(nftId);
+        NFT721.burn(msg.sender, nftId);
 
         uint256 fee = (PRICE * 17)/1000;
         uint256 receivableAmount = PRICE - fee ;
@@ -58,10 +56,10 @@ contract Dex {
     }
 
     function exchangePurchaseTokenToEth(uint256 amount) external {
-        require(msg.sender.code.length == 0, "!EOA");
+
         require(PT20.balanceOf(msg.sender) >= amount, "Insufficient Token Balance");
 
-        uint256 ethAmount = (amount * 10 ** 18)/PRICE ;
+        uint256 ethAmount = (amount/PRICE) ;
         (bool success, ) = msg.sender.call{value: ethAmount}("");
         require(success, "Eth not transferred");
         PT20.burn(msg.sender, amount);
