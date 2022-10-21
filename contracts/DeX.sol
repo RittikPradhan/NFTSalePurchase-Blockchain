@@ -25,9 +25,9 @@ contract Dex {
     }
 
     function exchangeEthToPurchaseToken() external payable {
-        uint256 tokenAmount;
+        require(msg.value > 0, "Insufficient Supply");
 
-        tokenAmount = (msg.value * PRICE);
+        uint256 tokenAmount = (msg.value * PRICE);
         PT20.mint(msg.sender, tokenAmount);
 
         emit TokenMinted(msg.sender, msg.value, tokenAmount);
@@ -58,6 +58,7 @@ contract Dex {
     function exchangePurchaseTokenToEth(uint256 amount) external {
 
         require(PT20.balanceOf(msg.sender) >= amount, "Insufficient Token Balance");
+        require(amount >= PRICE, "Min. 1000000 Token to get 1 wei");
 
         uint256 ethAmount = (amount/PRICE) ;
         (bool success, ) = msg.sender.call{value: ethAmount}("");
